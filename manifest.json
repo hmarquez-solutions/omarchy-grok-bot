@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.hmarquez-solutions.grok-bot",
+  "name": "Grok Bot",
+  "version": "0.1.1",
+  "author": "Hector Marquez",
+  "license": "MIT",
+  "description": "Grok Bot's face in the Omarchy bar: it thinks while your agents work, perks up and names the agent that needs you, and opens a panel of every agent with what it last said.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Grok Bot",
+    "description": "An expressive face that shows when agents are working or waiting on you, with a panel of agents and quick actions.",
+    "category": "AI",
+    "aliases": ["grok-bot", "grokbot", "sand"],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "showNameInBar": true,
+      "nudgeIntervalSec": 8,
+      "hideWhenNotInstalled": true,
+      "workingWindowSec": 12
+    },
+    "schema": [
+      {
+        "key": "showNameInBar",
+        "type": "boolean",
+        "label": "Show the waiting agent's name next to the face",
+        "defaultValue": true
+      },
+      {
+        "key": "nudgeIntervalSec",
+        "type": "integer",
+        "label": "Nudge every (seconds) while an agent waits",
+        "description": "0 nudges once when the agent starts waiting and then holds still.",
+        "min": 0,
+        "max": 120,
+        "step": 1,
+        "defaultValue": 8
+      },
+      {
+        "key": "workingWindowSec",
+        "type": "integer",
+        "label": "Seconds of silence before a working agent counts as idle",
+        "description": "Working is inferred from Grok Bot rewriting the agent's transcript; this is how long after the last write the face keeps thinking.",
+        "min": 3,
+        "max": 120,
+        "step": 1,
+        "defaultValue": 12
+      },
+      {
+        "key": "hideWhenNotInstalled",
+        "type": "boolean",
+        "label": "Hide the face when Grok Bot is not installed",
+        "defaultValue": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Shows every Face mood at bar, hero and poster size in a floating window.
+# Quickshell only imports from inside its config folder, so this stages a
+# throwaway config with a copy of Face.qml and runs it.
+set -euo pipefail
+here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+stage=$(mktemp -d "${XDG_RUNTIME_DIR:-/tmp}/grok-bot-gallery.XXXXXX")
+trap 'rm -rf "$stage"' EXIT
+cp -r "$here/Commons" "$here/shell.qml" "$stage/"
+cp "$here/../../Face.qml" "$stage/Face.qml"
+exec quickshell -p "$stage" "$@"
