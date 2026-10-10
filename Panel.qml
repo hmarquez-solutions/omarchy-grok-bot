@@ -537,7 +537,8 @@ Panel {
       visible: mark.state === "working"
       opacity: 0
 
-      SequentialAnimation on opacity {
+      // Deliberate: opacity: 0 is the resting value when the breathing animation is not running.
+      SequentialAnimation on opacity { // qmllint disable duplicate-property-binding
         running: mark.animate && mark.state === "working"
         loops: Animation.Infinite
         NumberAnimation { to: 0.6; duration: 700; easing.type: Easing.InOutSine }
@@ -590,7 +591,8 @@ Panel {
           { key: "quit", icon: "󰅖", tip: "Quit Grok Bot  ·  Shift+Q", index: 3 }
         ]
 
-        PanelActionButton {
+        // modelData is injected by the Repeater; qmllint only flags it because PanelActionButton (qs.Ui) is unresolved in CI.
+        PanelActionButton { // qmllint disable required
           required property var modelData
           Layout.alignment: Qt.AlignVCenter
           iconText: modelData.icon
