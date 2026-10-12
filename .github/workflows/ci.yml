@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SHELLCHECK_VERSION: v0.10.0
+      SHELLCHECK_SHA256: 6c881ab0698e4e6ea235245f22832860544f17ba386442fe7e9d629f8cbedf87
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: |
+          curl -fsSL -o /tmp/shellcheck.tar.xz \
+            "https://github.com/koalaman/shellcheck/releases/download/${SHELLCHECK_VERSION}/shellcheck-${SHELLCHECK_VERSION}.linux.x86_64.tar.xz"
+          echo "${SHELLCHECK_SHA256}  /tmp/shellcheck.tar.xz" | sha256sum -c -
+          tar -xJf /tmp/shellcheck.tar.xz -C /tmp
+          sudo install -m 0755 "/tmp/shellcheck-${SHELLCHECK_VERSION}/shellcheck" /usr/local/bin/shellcheck
+          shellcheck --version
+
+      # Tracked *.sh/*.bash files, plus any tracked file whose first line is a
+      # sh/bash/dash/ksh shebang (tools/gallery/run).
+      - name: shellcheck
+        run: |
+          mapfile -d '' files < <(
+            git ls-files -z | while IFS= read -r -d '' f; do
+              [[ -f "$f" && ! -L "$f" ]] || continue
+              case "$f" in *.sh|*.bash) printf '%s\0' "$f"; continue ;; esac
+              first=
+              IFS= read -r first < "$f" || true
+              [[ "$first" =~ ^#!.*/(env[[:space:]]+)?(ba|da|k)?sh([[:space:]]|$) ]] && printf '%s\0' "$f"
+            done
+          )
+          printf 'Checking %d files:\n' "${#files[@]}"; printf '  %s\n' "${files[@]}"
+          shellcheck -f gcc "${files[@]}"
+
+  qmllint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: "6.8.2"
+          cache: true
+
+      # Settings come from .qmllint.ini at the repo root.
+      - name: qmllint
+        run: |
+          qmllint --version
+          git ls-files -z '*.qml' | xargs -0 -r qmllint --max-warnings 0
+
+  node:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      # No package.json/ESLint here, so this is a syntax check only. The
+      # QML-only `.pragma` / `.import` directives are blanked out first (line
+      # numbers are kept) because they are not plain JavaScript.
+      - name: JS syntax check
+        run: |
+          status=0
+          while IFS= read -r -d '' f; do
+            sed -E 's/^[[:space:]]*\.(pragma|import)([[:space:]].*)?$//' "$f" \
+              | node --check - 2> >(sed "s|\[stdin\]|$f|" >&2) || { echo "::error file=$f::node --check failed"; status=1; }
+          done < <(git ls-files -z '*.js' '*.mjs')
+          exit $status
+
+      - name: Model tests
+        run: node tests/model.test.js
